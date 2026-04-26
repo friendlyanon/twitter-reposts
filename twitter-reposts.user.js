@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name        Mark reposts on Media tab
 // @description Run perceptual hashing on Twitter (now X) users' Media tab to identify reposts.
-// @namespace   friendlyanon
+// @namespace   https://github.com/friendlyanon
+// @author      friendlyanon
 // @match       https://x.com/*
 // @grant       none
 // @run-at      document-start

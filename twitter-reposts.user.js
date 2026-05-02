@@ -10,6 +10,7 @@
 // @downloadURL https://raw.githubusercontent.com/friendlyanon/twitter-reposts/master/twitter-reposts.user.js
 // @supportURL  https://github.com/friendlyanon/twitter-reposts/issues
 // @homepageURL https://github.com/friendlyanon/twitter-reposts
+// @top-level-await
 // ==/UserScript==
 
 // SPDX-License-Identifier: GPL-3.0
@@ -45,151 +46,111 @@ function computePhashFromImage(image, sampleSize, hashSize) {
 const computePhashFromImageData = (imageData, sampleSize, hashSize) =>
   computePhashFromRgba(imageData.data, imageData.width, imageData.height, sampleSize, hashSize);
 
-function computePhashFromRgba(rgba, width, height, sampleSize, hashSize) {
-  const sample = width === sampleSize && height === sampleSize
-    ? rgba
-    : resizeRgbaToSquare(rgba, width, height, sampleSize);
-  const gray = grayscale(sample, sampleSize, sampleSize);
-  const dct = dct2(gray, sampleSize);
-  const top = extractTopBlock(dct, sampleSize, hashSize);
-  const bits = buildHashBits(top);
-  const hexLength = hashSize * hashSize >> 2;
-  const hex = bitsToHex(bits).slice(0, hexLength);
-  return hex.padStart(hexLength, "0");
-}
+const computePhashFromRgba = await (async () => {
+  const memory = new WebAssembly.Memory({ initial: 16 });
+  const { instance } = await WebAssembly.instantiate(new Uint8Array(JSON.parse(`[
+    0,97,115,109,1,0,0,0,1,12,2,96,1,127,1,127,96,3,127,127,127,0,2,15,1,3,101,110,118,6,
+    109,101,109,111,114,121,2,0,2,3,3,2,0,1,6,15,2,127,1,65,128,128,4,11,127,0,65,144,
+    128,4,11,7,38,2,20,99,111,109,112,117,116,101,80,104,97,115,104,70,114,111,109,82,
+    103,98,97,0,0,11,95,95,104,101,97,112,95,98,97,115,101,3,1,10,203,15,2,186,13,7,9,
+    127,3,125,9,127,2,125,4,127,1,125,1,127,63,0,65,16,116,33,1,32,0,40,2,24,33,2,32,0,
+    40,2,16,33,3,2,64,2,64,2,64,2,64,32,0,40,2,4,34,4,32,0,40,2,12,34,5,71,13,0,32,0,40,
+    2,8,32,5,71,13,0,32,5,32,5,108,33,6,32,0,40,2,0,33,7,32,2,33,8,12,1,11,32,5,32,5,108,
+    34,6,65,2,116,34,9,32,1,32,2,107,78,13,1,32,2,32,9,106,33,8,2,64,2,64,32,5,13,0,65,0,
+    33,6,12,1,11,32,4,178,32,5,178,34,10,149,33,11,32,0,40,2,8,34,9,178,32,10,149,33,12,
+    32,0,40,2,0,33,13,32,5,65,2,116,33,14,32,4,65,127,106,33,15,32,9,65,127,106,33,16,32,
+    2,33,17,65,0,33,18,3,64,32,16,32,18,179,67,0,0,0,63,146,32,12,148,67,0,0,0,191,146,
+    34,10,142,252,0,34,9,65,0,32,9,65,0,74,27,34,9,65,1,106,34,19,32,16,32,19,72,27,32,4,
+    108,33,20,32,9,32,4,108,33,21,67,0,0,128,63,32,10,32,9,179,147,34,22,147,33,23,32,17,
+    33,24,65,0,33,25,3,64,65,0,33,9,32,13,32,15,32,25,179,67,0,0,0,63,146,32,11,148,67,0,
+    0,0,191,146,34,10,142,252,0,34,19,65,0,32,19,65,0,74,27,34,19,65,1,106,34,7,32,15,32,
+    7,72,27,34,26,32,20,106,65,2,116,106,33,7,32,13,32,26,32,21,106,65,2,116,106,33,26,
+    32,13,32,19,32,20,106,65,2,116,106,33,27,67,0,0,128,63,32,10,32,19,179,147,34,10,147,
+    33,28,32,13,32,19,32,21,106,65,2,116,106,33,29,3,64,32,24,32,9,106,32,29,32,9,106,45,
+    0,0,179,32,28,148,32,10,32,26,32,9,106,45,0,0,179,148,146,32,23,148,32,22,32,27,32,9,
+    106,45,0,0,179,32,28,148,32,10,32,7,32,9,106,45,0,0,179,148,146,148,146,67,0,0,0,63,
+    146,142,252,0,34,19,65,0,32,19,65,0,74,27,34,19,65,255,1,32,19,65,255,1,72,27,58,0,0,
+    32,9,65,1,106,34,9,65,4,71,13,0,11,32,24,65,4,106,33,24,32,25,65,1,106,34,25,32,5,71,
+    13,0,11,32,17,32,14,106,33,17,32,18,65,1,106,34,18,32,5,71,13,0,11,11,32,2,33,7,11,
+    32,6,32,1,65,0,32,8,107,65,3,113,32,8,106,34,20,107,65,4,109,78,13,0,32,20,32,6,65,2,
+    116,34,25,106,33,13,2,64,32,5,69,13,0,32,5,65,2,116,33,27,65,0,33,29,32,20,33,26,3,
+    64,32,7,33,9,32,26,33,19,32,5,33,24,3,64,32,19,32,9,65,2,106,45,0,0,179,67,213,120,
+    233,61,148,32,9,45,0,0,179,67,135,22,153,62,148,32,9,65,1,106,45,0,0,179,67,162,69,
+    22,63,148,146,146,56,2,0,32,9,65,4,106,33,9,32,19,65,4,106,33,19,32,24,65,127,106,34,
+    24,13,0,11,32,7,32,27,106,33,7,32,26,32,27,106,33,26,32,29,65,1,106,34,29,32,5,71,13,
+    0,11,11,32,6,32,1,65,0,32,13,107,65,3,113,32,13,106,34,13,107,65,4,109,78,13,0,32,13,
+    32,25,106,33,9,32,6,32,1,32,9,65,0,32,9,107,65,3,113,106,34,17,107,65,4,109,34,18,78,
+    13,0,32,17,33,29,32,5,65,127,76,13,0,32,5,32,1,65,0,32,17,32,25,106,34,9,107,65,3,
+    113,32,9,106,34,26,107,65,4,109,78,13,0,32,26,32,5,65,2,116,34,24,106,33,9,32,5,32,1,
+    32,9,65,0,32,9,107,65,3,113,106,34,21,107,65,4,109,78,13,0,32,3,32,3,108,33,27,2,64,
+    32,5,69,13,0,65,0,33,25,32,29,33,7,3,64,32,20,32,25,32,5,108,65,2,116,106,32,5,32,26,
+    16,129,128,128,128,0,65,0,33,9,32,5,33,19,3,64,32,7,32,9,106,32,26,32,9,106,42,2,0,
+    56,2,0,32,9,65,4,106,33,9,32,19,65,127,106,34,19,13,0,11,32,7,32,24,106,33,7,32,25,
+    65,1,106,34,25,32,5,71,13,0,11,65,0,33,15,32,13,33,25,32,29,33,20,3,64,32,20,33,9,32,
+    21,33,19,32,5,33,7,3,64,32,19,32,9,42,2,0,56,2,0,32,9,32,24,106,33,9,32,19,65,4,106,
+    33,19,32,7,65,127,106,34,7,13,0,11,32,21,32,5,32,26,16,129,128,128,128,0,32,26,33,9,
+    32,25,33,19,32,5,33,7,3,64,32,19,32,9,42,2,0,56,2,0,32,9,65,4,106,33,9,32,19,32,24,
+    106,33,19,32,7,65,127,106,34,7,13,0,11,32,25,65,4,106,33,25,32,20,65,4,106,33,20,32,
+    15,65,1,106,34,15,32,5,71,13,0,11,11,32,27,32,18,78,13,0,32,17,32,27,65,2,116,106,33,
+    7,2,64,32,3,69,13,0,32,5,65,2,116,33,20,32,3,65,2,116,33,21,65,0,33,25,32,29,33,26,3,
+    64,32,13,33,9,32,26,33,19,32,3,33,24,3,64,32,19,32,9,42,2,0,56,2,0,32,9,65,4,106,33,
+    9,32,19,65,4,106,33,19,32,24,65,127,106,34,24,13,0,11,32,13,32,20,106,33,13,32,26,32,
+    21,106,33,26,32,25,65,1,106,34,25,32,3,71,13,0,11,67,0,0,0,0,33,10,2,64,32,27,65,2,
+    73,13,0,32,27,32,1,65,0,32,7,107,65,3,113,32,7,106,34,13,107,65,4,109,74,13,2,32,29,
+    65,4,106,33,9,32,13,33,19,32,27,65,127,106,34,25,33,24,3,64,32,19,32,9,42,2,0,56,2,0,
+    32,9,65,4,106,33,9,32,19,65,4,106,33,19,32,24,65,127,106,34,24,13,0,11,65,0,33,9,2,
+    64,32,27,65,2,70,13,0,32,13,33,26,65,1,33,24,3,64,32,13,32,24,65,2,116,106,42,2,0,33,
+    28,32,26,33,9,32,24,33,19,2,64,3,64,32,9,42,2,0,34,10,32,28,94,69,13,1,32,9,65,4,106,
+    32,10,56,2,0,32,9,65,124,106,33,9,32,19,65,127,106,34,19,65,1,106,65,1,74,13,0,11,65,
+    0,33,19,11,32,13,32,19,65,2,116,106,32,28,56,2,0,32,26,65,4,106,33,26,32,24,65,1,106,
+    34,24,32,25,71,13,0,11,32,25,65,1,118,33,9,32,25,65,1,113,13,0,32,13,32,9,65,2,116,
+    106,34,9,65,124,106,42,2,0,32,9,42,2,0,146,67,0,0,0,63,148,33,10,12,1,11,32,13,32,9,
+    65,2,116,106,42,2,0,33,10,11,32,27,32,1,32,7,107,78,13,1,32,7,33,9,32,27,33,19,3,64,
+    32,9,32,29,42,2,0,32,10,94,58,0,0,32,29,65,4,106,33,29,32,9,65,1,106,33,9,32,19,65,
+    127,106,34,19,13,0,11,32,0,40,2,20,33,29,65,0,33,26,3,64,65,3,33,19,32,26,33,9,65,0,
+    33,24,2,64,3,64,32,9,32,27,79,13,1,32,7,32,9,106,45,0,0,32,19,116,32,24,114,33,24,32,
+    9,65,1,106,33,9,32,19,65,127,106,34,19,65,127,71,13,0,11,11,32,29,32,26,65,2,118,106,
+    32,24,45,0,128,128,132,128,0,58,0,0,32,26,65,4,106,34,26,32,27,73,13,0,12,3,11,11,32,
+    27,32,1,32,7,107,72,13,1,11,0,11,32,27,65,2,118,11,140,2,7,4,125,1,127,2,125,1,127,1,
+    125,1,127,2,125,2,64,32,1,69,13,0,67,219,15,73,64,32,1,178,34,3,149,33,4,67,0,0,0,64,
+    32,3,149,145,33,5,67,0,0,128,63,32,3,149,145,33,6,65,0,33,7,3,64,32,4,32,7,179,148,
+    33,8,67,0,0,0,0,33,9,65,0,33,10,3,64,32,8,32,10,179,67,0,0,0,63,146,148,34,3,32,3,67,
+    219,15,201,64,149,142,67,219,15,201,192,148,146,34,3,67,219,15,201,192,146,32,3,32,3,
+    67,219,15,73,64,94,27,34,3,32,3,140,148,33,11,65,2,33,12,32,0,32,10,65,2,116,106,42,
+    2,0,33,13,67,0,0,128,63,33,14,67,0,0,128,63,33,3,3,64,32,3,32,14,32,11,32,12,65,127,
+    106,32,12,108,178,149,148,34,14,146,33,3,32,12,65,2,106,34,12,65,26,71,13,0,11,32,13,
+    32,3,148,32,9,146,33,9,32,10,65,1,106,34,10,32,1,71,13,0,11,32,2,32,7,65,2,116,106,
+    32,5,32,6,32,7,27,32,9,148,56,2,0,32,7,65,1,106,34,7,32,1,71,13,0,11,11,11,11,24,1,0,
+    65,128,128,4,11,16,48,49,50,51,52,53,54,55,56,57,97,98,99,100,101,102
+  ]`)), { env: { memory } });
+  const heapBase = instance.exports.__heap_base.value;
+  const mem = new Uint8Array(memory.buffer);
+  const i32View = new Int32Array(memory.buffer);
+  const decoder = new TextDecoder();
 
-function resizeRgbaToSquare(rgba, width, height, size) {
-  const output = new Uint8ClampedArray(size * size << 2);
-  const xRatio = width / size;
-  const yRatio = height / size;
-  for (let y = 0; y !== size; ++y) {
-    const srcY = (y + 0.5) * yRatio - 0.5;
-    const y0 = Math.max(0, Math.floor(srcY));
-    const y1 = Math.min(height - 1, y0 + 1);
-    const wy = srcY - y0;
-    for (let x = 0; x !== size; ++x) {
-      const srcX = (x + 0.5) * xRatio - 0.5;
-      const x0 = Math.max(0, Math.floor(srcX));
-      const x1 = Math.min(width - 1, x0 + 1);
-      const wx = srcX - x0;
-      const base = y * size + x << 2;
-      const idx00 = y0 * width + x0 << 2;
-      const idx10 = y0 * width + x1 << 2;
-      const idx01 = y1 * width + x0 << 2;
-      const idx11 = y1 * width + x1 << 2;
-      for (let c = 0; c !== 4; ++c) {
-        const top = rgba[idx00 + c] * (1 - wx) + rgba[idx10 + c] * wx;
-        const bottom = rgba[idx01 + c] * (1 - wx) + rgba[idx11 + c] * wx;
-        output[base + c] = Math.round(top * (1 - wy) + bottom * wy);
-      }
-    }
-  }
-  return output;
-}
+  return function computePhashFromRgba(rgba, width, height, sampleSize, hashSize) {
+    // Layout at heapBase: [args struct (28)] [rgba data] [output] [heap -->]
+    const argsPtr = (heapBase + 3) & ~3;
+    const argsBase = argsPtr >> 2;
+    const rgbaPtr = argsPtr + 28;
+    const outputPtr = rgbaPtr + rgba.length;
+    const heapStart = (outputPtr + (hashSize * hashSize >> 2) + 3) & ~3;
 
-function grayscale(data, width, height) {
-  const matrix = new Float32Array(width * height);
-  for (let y = 0; y !== height; ++y) {
-    const base = y * width;
-    for (let x = 0; x !== width; ++x) {
-      const i = base + x;
-      const idx = i << 2;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      matrix[i] = 0.299 * r + 0.587 * g + 0.114 * b;
-    }
-  }
-  return matrix;
-}
+    mem.set(rgba, rgbaPtr);
 
-function dct1d(vector) {
-  const size = vector.length;
-  const result = new Float32Array(size);
-  const factor = Math.PI / size;
-  const scale0 = Math.sqrt(1 / size);
-  const scale = Math.sqrt(2 / size);
-  for (let u = 0; u !== size; ++u) {
-    let sum = 0;
-    const factored = u * factor;
-    for (let x = 0; x !== size; ++x) {
-      sum += vector[x] * Math.cos((x + 0.5) * factored);
-    }
-    result[u] = (u === 0 ? scale0 : scale) * sum;
-  }
-  return result;
-}
+    // struct computePhashFromRgbaArgs
+    i32View[argsBase] = rgbaPtr;        // rgba
+    i32View[argsBase + 1] = width;      // dims.width
+    i32View[argsBase + 2] = height;     // dims.height
+    i32View[argsBase + 3] = sampleSize; // hashing.sampleSize
+    i32View[argsBase + 4] = hashSize;   // hashing.hashSize
+    i32View[argsBase + 5] = outputPtr;  // output
+    i32View[argsBase + 6] = heapStart;  // heapStart
 
-function dct2(matrix, size) {
-  const temp = new Float32Array(size * size);
-  const result = new Float32Array(size * size);
-  for (let y = 0; y !== size; ++y) {
-    const transformed = dct1d(matrix.subarray(y * size, y * size + size));
-    const base = y * size;
-    for (let u = 0; u !== size; ++u) {
-      temp[base + u] = transformed[u];
-    }
-  }
-  const column = new Float32Array(size);
-  for (let x = 0; x !== size; ++x) {
-    for (let v = 0; v !== size; ++v) {
-      column[v] = temp[v * size + x];
-    }
-    const transformed = dct1d(column);
-    for (let v = 0; v !== size; ++v) {
-      result[v * size + x] = transformed[v];
-    }
-  }
-  return result;
-}
-
-function extractTopBlock(matrix, srcSize, blockSize) {
-  const block = new Float32Array(blockSize * blockSize);
-  for (let y = 0; y !== blockSize; ++y) {
-    const blockBase = y * blockSize;
-    const srcBase = y * srcSize;
-    for (let x = 0; x !== blockSize; ++x) {
-      block[blockBase + x] = matrix[srcBase + x];
-    }
-  }
-  return block;
-}
-
-function computeThreshold(matrix) {
-  const len = matrix.length;
-  if (len <= 1) {
-    return 0;
-  }
-  const values = new Float32Array(len - 1);
-  for (let i = 1; i !== len; ++i) {
-    values[i - 1] = matrix[i];
-  }
-  values.sort();
-  const mid = values.length >> 1;
-  return values.length % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
-}
-
-function buildHashBits(matrix) {
-  const threshold = computeThreshold(matrix);
-  const bits = [];
-  for (let i = 0; i !== matrix.length; ++i) {
-    bits.push(matrix[i] > threshold ? 1 : 0);
-  }
-  return bits;
-}
-
-function bitsToHex(bits) {
-  let hex = "";
-  for (let i = 0; i !== bits.length; i += 4) {
-    const chunk = bits.slice(i, i + 4);
-    while (chunk.length !== 4) {
-      chunk.push(0);
-    }
-    const value = chunk[0] << 3 | chunk[1] << 2 | chunk[2] << 1 | chunk[3];
-    hex += value.toString(16);
-  }
-  return hex;
-}
+    const resultLen = instance.exports.computePhashFromRgba(argsPtr);
+    return decoder.decode(mem.slice(outputPtr, outputPtr + resultLen));
+  };
+})();
 
 function calculateSimilarity(hash1, hash2) {
   const distance = hammingDistance(hash1, hash2);

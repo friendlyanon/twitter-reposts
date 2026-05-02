@@ -938,6 +938,7 @@ document.addEventListener("DOMContentLoaded", () => {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  padding: 4px 0;
 }
 .dedupe-dialog-item-description > div {
   display: flex;
@@ -959,7 +960,7 @@ document.addEventListener("DOMContentLoaded", () => {
   color: rgb(var(--dedupe-link-color));
   background-color: rgba(var(--dedupe-link-color), 0.2);
   border-radius: 9999px;
-  padding: 5px 10px;
+  padding: 8px 14px;
   font-size: 1.2em;
   transition-duration: 0.2s;
   transition-property: background-color;

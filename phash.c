@@ -101,8 +101,9 @@ static f32 cos(f32 x)
     f32 sum = 1.0f;
     f32 term = 1.0f;
     i32 i;
-    for (i = 1; i <= 12; ++i) {
-      term *= -x2 / (f32)((2 * i - 1) * (2 * i));
+    for (i = 1; i != 13; ++i) {
+      i32 i2 = i << 1;
+      term *= -x2 / (f32)((i2 - 1) * i2);
       sum += term;
     }
     return sum;
@@ -124,9 +125,9 @@ static void resizeRgbaToSquare(
 {
   f32 xRatio = (f32)width / (f32)size;
   f32 yRatio = (f32)height / (f32)size;
-  i32 y;
-  for (y = 0; y != size; ++y) {
-    i32 ys = y * size;
+  i32 ys = 0;
+  i32 y = 0;
+  for (;;) {
     f32 srcY = ((f32)y + 0.5f) * yRatio - 0.5f;
     i32 y0 = imax(0, (i32)floor(srcY));
     i32 y1 = imin(height - 1, y0 + 1);
@@ -156,14 +157,18 @@ static void resizeRgbaToSquare(
             (u8)(rounded < 0 ? 0 : (rounded > 255 ? 255 : rounded));
       }
     }
+    if (++y == size) {
+      break;
+    }
+    ys += size;
   }
 }
 
 static void grayscale(u8* data, i32 width, i32 height, f32* matrix)
 {
-  i32 y;
-  for (y = 0; y != height; ++y) {
-    i32 base = y * width;
+  i32 base = 0;
+  i32 y = 0;
+  for (;;) {
     i32 x;
     for (x = 0; x != width; ++x) {
       i32 i = base + x;
@@ -173,6 +178,10 @@ static void grayscale(u8* data, i32 width, i32 height, f32* matrix)
       f32 b = (f32)data[idx + 2];
       matrix[i] = 0.299f * r + 0.587f * g + 0.114f * b;
     }
+    if (++y == height) {
+      break;
+    }
+    base += width;
   }
 }
 
@@ -182,46 +191,63 @@ static void dct1d(f32* vector, i32 size, f32* result)
   f32 factor = pi / (f32)size;
   f32 scale0 = sqrt(1.0f / (f32)size);
   f32 scale = sqrt(2.0f / (f32)size);
-  i32 u;
-  for (u = 0; u != size; ++u) {
+  f32 factored = 0.0f;
+  i32 u = 0;
+  for (;;) {
     f32 sum = 0.0f;
-    f32 factored = (f32)u * factor;
     i32 x;
     for (x = 0; x != size; ++x) {
       sum += vector[x] * cos(((f32)x + 0.5f) * factored);
     }
     result[u] = (u == 0 ? scale0 : scale) * sum;
+    if (++u == size) {
+      break;
+    }
+    factored += factor;
   }
 }
 
 static void dct2(f32* matrix, i32 size, f32* result, struct arena scratch)
 {
   f32* temp = new (&scratch, size * size, f32);
-  f32* row_result = new (&scratch, size, f32);
+  f32* row = new (&scratch, size, f32);
   f32* column = new (&scratch, size, f32);
 
   {
-    i32 y;
-    for (y = 0; y != size; ++y) {
-      i32 ys = y * size;
+    i32 ys = 0;
+    i32 y = 0;
+    for (;;) {
       i32 u;
-      dct1d(matrix + ys, size, row_result);
+      dct1d(matrix + ys, size, row);
       for (u = 0; u != size; ++u) {
-        temp[ys + u] = row_result[u];
+        temp[ys + u] = row[u];
       }
+      if (++y == size) {
+        break;
+      }
+      ys += size;
     }
   }
 
   {
     i32 x;
     for (x = 0; x != size; ++x) {
-      i32 v;
-      for (v = 0; v != size; ++v) {
-        column[v] = temp[v * size + x];
+      i32 vs = 0;
+      i32 v = 0;
+      for (;;) {
+        column[v] = temp[vs + x];
+        if (++v == size) {
+          break;
+        }
+        vs += size;
       }
-      dct1d(column, size, row_result);
-      for (v = 0; v != size; ++v) {
-        result[v * size + x] = row_result[v];
+      dct1d(column, size, row);
+      for (vs = 0, v = 0;;) {
+        result[vs + x] = row[v];
+        if (++v == size) {
+          break;
+        }
+        vs += size;
       }
     }
   }
@@ -232,14 +258,19 @@ static void extractTopBlock(f32* matrix,
                             i32 blockSize,
                             f32* block)
 {
-  i32 y;
-  for (y = 0; y != blockSize; ++y) {
-    i32 blockBase = y * blockSize;
-    i32 srcBase = y * srcSize;
+  i32 blockBase = 0;
+  i32 srcBase = 0;
+  i32 y = 0;
+  for (;;) {
     i32 x;
     for (x = 0; x != blockSize; ++x) {
       block[blockBase + x] = matrix[srcBase + x];
     }
+    if (++y == blockSize) {
+      return;
+    }
+    blockBase += blockSize;
+    srcBase += srcSize;
   }
 }
 
@@ -247,32 +278,34 @@ static f32 computeThreshold(f32* matrix, i32 len, struct arena scratch)
 {
   i32 i;
   f32* values;
-  iz vlen;
+  i32 vlen;
 
   if (len <= 1) {
     return 0.0f;
   }
 
-  vlen = (iz)len - 1;
+  vlen = len - 1;
   values = new (&scratch, vlen, f32);
   for (i = 1; i != len; ++i) {
     values[i - 1] = matrix[i];
   }
-  for (i = 1; i < (i32)vlen; ++i) {
+  for (i = 1; i != vlen; ++i) {
     f32 key = values[i];
     i32 j = i - 1;
-    while (j >= 0 && values[j] > key) {
+    for (; values[j] > key; --j) {
       values[j + 1] = values[j];
-      --j;
+      if (j == 0) {
+        break;
+      }
     }
     values[j + 1] = key;
   }
   {
-    i32 mid = (i32)(vlen >> 1);
-    if (vlen % 2 == 0) {
-      return (values[mid - 1] + values[mid]) / 2.0f;
+    i32 mid = vlen >> 1;
+    if (vlen & 1) {
+      return values[mid];
     }
-    return values[mid];
+    return (values[mid - 1] + values[mid]) / 2.0f;
   }
 }
 
@@ -305,6 +338,7 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
   f32* top;
   f32 threshold;
   u8* bits;
+  i32 sampleCount = sampleSize * sampleSize;
 
   a.beg = args->heapStart;
   a.end = (u8*)(__builtin_wasm_memory_size(0) << 16);
@@ -312,15 +346,15 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
   if (dims->width == sampleSize && dims->height == sampleSize) {
     sample = args->rgba;
   } else {
-    sample = new (&a, sampleSize * sampleSize * 4, u8);
+    sample = new (&a, sampleCount << 2, u8);
     resizeRgbaToSquare(
         args->rgba, dims->width, dims->height, sampleSize, sample);
   }
 
-  gray = new (&a, sampleSize * sampleSize, f32);
+  gray = new (&a, sampleCount, f32);
   grayscale(sample, sampleSize, sampleSize, gray);
 
-  dctResult = new (&a, sampleSize * sampleSize, f32);
+  dctResult = new (&a, sampleCount, f32);
   dct2(gray, sampleSize, dctResult, a);
 
   top = new (&a, blockLen, f32);

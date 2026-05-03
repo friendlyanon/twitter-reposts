@@ -24,7 +24,9 @@ foreach ($cmd in $commands) {
   } elseif ($IsWindows -and (Test-Path "C:\Program Files\LLVM\bin\$exe.exe")) {
     $exe = "C:\Program Files\LLVM\bin\$exe.exe"
   } else {
-    Write-Error "$exe not found in PATH or C:\Program Files\LLVM\bin"
+    $msg = "$exe not found in PATH"
+    if ($IsWindows) { $msg += ' or C:\Program Files\LLVM\bin' }
+    Write-Error $msg
     exit 1
   }
 
@@ -38,7 +40,7 @@ $indent = 4
 $pad = ' ' * $indent
 $sb = [System.Text.StringBuilder]::new()
 $col = 0
-for ($i = 0; $i -lt $raw.Count; $i++) {
+for ($i = 0; $i -ne $raw.Count; ++$i) {
   $v = [string]$raw[$i]
   if ($col -eq 0) {
     [void]$sb.Append($pad)
@@ -49,7 +51,7 @@ for ($i = 0; $i -lt $raw.Count; $i++) {
     $col = $indent
   } else {
     [void]$sb.Append(',')
-    $col++
+    ++$col
   }
   [void]$sb.Append($v)
   $col += $v.Length

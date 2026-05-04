@@ -101,7 +101,7 @@ static f32 cos(f32 x)
   f32 halfpi = pi * 0.5f;
   f32 t, sign;
 
-  x = x - floor(x / twopi) * twopi;
+  x = x - floor(x * (1.0f / twopi)) * twopi;
   if (x > pi) {
     x -= twopi;
   }
@@ -132,8 +132,9 @@ static i32 imin(i32 a, i32 b)
 static void resizeRgbaToSquare(
     u8* rgba, i32 width, i32 height, i32 size, u8* output)
 {
-  f32 xRatio = (f32)width / (f32)size;
-  f32 yRatio = (f32)height / (f32)size;
+  f32 sizerecip = 1.0f / (f32)size;
+  f32 xRatio = (f32)width * sizerecip;
+  f32 yRatio = (f32)height * sizerecip;
   i32 ys = 0;
   i32 y = 0;
   for (;;) {
@@ -197,9 +198,10 @@ static void grayscale(u8* data, i32 width, i32 height, f32* matrix)
 static void dct1d(f32* vector, i32 size, f32* result)
 {
   f32 pi = 3.14159265f;
-  f32 factor = pi / (f32)size;
-  f32 scale0 = sqrt(1.0f / (f32)size);
-  f32 scale = sqrt(2.0f / (f32)size);
+  f32 sizerecip = 1.0f / (f32)size;
+  f32 factor = pi * sizerecip;
+  f32 scale0 = sqrt(sizerecip);
+  f32 scale = sqrt(2.0f * sizerecip);
   f32 factored = 0.0f;
   i32 u = 0;
   for (;;) {
@@ -314,7 +316,7 @@ static f32 computeThreshold(f32* matrix, i32 len, struct arena scratch)
     if (vlen & 1) {
       return values[mid];
     }
-    return (values[mid - 1] + values[mid]) / 2.0f;
+    return (values[mid - 1] + values[mid]) * 0.5f;
   }
 }
 

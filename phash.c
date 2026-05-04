@@ -85,29 +85,38 @@ static f32 round(f32 x)
   return __builtin_floorf(x + 0.5f);
 }
 
-/* cosine via Taylor series, x in radians */
+/* minimax degree-7 sine, x in [0, pi/2] */
+static f32 sin(f32 x)
+{
+  f32 x2 = x * x;
+  return x
+      * (0.99999906f
+         + x2 * (-0.16665554f + x2 * (0.00831190f - 0.00018488f * x2)));
+}
+
 static f32 cos(f32 x)
 {
   f32 pi = 3.14159265f;
   f32 twopi = 2.0f * pi;
+  f32 halfpi = pi * 0.5f;
+  f32 t, sign;
 
   x = x - floor(x / twopi) * twopi;
   if (x > pi) {
     x -= twopi;
   }
-
-  {
-    f32 x2 = x * x;
-    f32 sum = 1.0f;
-    f32 term = 1.0f;
-    i32 i;
-    for (i = 1; i != 13; ++i) {
-      i32 i2 = i << 1;
-      term *= -x2 / (f32)((i2 - 1) * i2);
-      sum += term;
-    }
-    return sum;
+  if (x < 0.0f) {
+    x = -x;
   }
+
+  t = halfpi - x;
+  sign = 1.0f;
+  if (t < 0.0f) {
+    t = -t;
+    sign = -1.0f;
+  }
+
+  return sign * sin(t);
 }
 
 static i32 imax(i32 a, i32 b)

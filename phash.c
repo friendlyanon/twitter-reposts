@@ -49,27 +49,6 @@ static void* alloc(struct arena* arena, iz count, iz size, iz align)
   }
 }
 
-struct dims
-{
-  i32 width;
-  i32 height;
-};
-
-struct hashing
-{
-  i32 sampleSize;
-  i32 hashSize;
-};
-
-struct computePhashFromRgbaArgs
-{
-  u8* rgba;
-  struct dims dims;
-  struct hashing hashing;
-  u8* output;
-  u8* heapStart;
-};
-
 static f32 sqrt(f32 x)
 {
   return __builtin_sqrtf(x);
@@ -334,14 +313,32 @@ static void bitsToHex(u8* bits, i32 nbits, u8* output)
   }
 }
 
-i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
+struct dims
 {
-  struct hashing* hashing = &args->hashing;
-  struct dims* dims = &args->dims;
+  i32 width;
+  i32 height;
+};
+
+struct hashing
+{
+  i32 sampleSize;
+  i32 hashSize;
+};
+
+struct computePhashFromRgbaArgs
+{
+  u8* rgba;
+  struct dims dims;
+  struct hashing hashing;
+  u8* output;
+  u8* heapStart;
+};
+
+i32 computePhashFromRgba(struct computePhashFromRgbaArgs args)
+{
   struct arena a;
-  i32 sampleSize = hashing->sampleSize;
-  i32 hashSize = hashing->hashSize;
-  i32 blockLen = hashSize * hashSize;
+  i32 sampleSize = args.hashing.sampleSize;
+  i32 blockLen = args.hashing.hashSize * args.hashing.hashSize;
   i32 hexLength = blockLen >> 2;
   u8* sample;
   f32* gray;
@@ -351,15 +348,15 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
   u8* bits;
   i32 sampleCount = sampleSize * sampleSize;
 
-  a.beg = args->heapStart;
+  a.beg = args.heapStart;
   a.end = (u8*)(__builtin_wasm_memory_size(0) << 16);
 
-  if (dims->width == sampleSize && dims->height == sampleSize) {
-    sample = args->rgba;
+  if (args.dims.width == sampleSize && args.dims.height == sampleSize) {
+    sample = args.rgba;
   } else {
     sample = new (&a, sampleCount << 2, u8);
     resizeRgbaToSquare(
-        args->rgba, dims->width, dims->height, sampleSize, sample);
+        args.rgba, args.dims.width, args.dims.height, sampleSize, sample);
   }
 
   gray = new (&a, sampleCount, f32);
@@ -369,7 +366,7 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
   dct2(gray, sampleSize, dctResult, a);
 
   top = new (&a, blockLen, f32);
-  extractTopBlock(dctResult, sampleSize, hashSize, top);
+  extractTopBlock(dctResult, sampleSize, args.hashing.hashSize, top);
 
   threshold = computeThreshold(top, blockLen, a);
   bits = new (&a, blockLen, u8);
@@ -380,7 +377,7 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs* args)
     }
   }
 
-  bitsToHex(bits, blockLen, args->output);
+  bitsToHex(bits, blockLen, args.output);
 
   return hexLength;
 }

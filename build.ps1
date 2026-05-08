@@ -71,6 +71,10 @@ $bytes
 
   return function computePhashFromRgba(rgba, width, height, sampleSize, hashSize) {
     const rgbaLen = rgba.length;
+    if (rgbaLen === 0 || !(width > 0) || !(height > 0) || !(sampleSize > 0) | !(hashSize > 0)) {
+      throw new Error("Invalid argument");
+    }
+
     const hexLength = hashSize * hashSize >> 2;
 
     // Layout at heapBase: [args struct (28)] [rgba data] [output] [heap -->]

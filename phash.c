@@ -11,7 +11,6 @@ llvm-objcopy --remove-section=producers --remove-section=target_features phash.w
 
 typedef unsigned char u8;
 typedef int i32;
-typedef unsigned int u32;
 typedef ptrdiff_t iz;
 typedef size_t uz;
 typedef float f32;
@@ -23,6 +22,13 @@ typedef float f32;
   do { \
     if (__builtin_expect(!(c), 0)) { \
       __builtin_trap(); \
+    } \
+  } while (0)
+
+#define assume(c) \
+  do { \
+    if (!(c)) { \
+      __builtin_unreachable(); \
     } \
   } while (0)
 
@@ -116,6 +122,7 @@ static void resizeRgbaToSquare(
   f32 yRatio = (f32)height * sizerecip;
   i32 ys = 0;
   i32 y = 0;
+  assume(size != 0);
   for (;;) {
     f32 srcY = ((f32)y + 0.5f) * yRatio - 0.5f;
     i32 y0 = imax(0, (i32)floor(srcY));
@@ -157,6 +164,8 @@ static void grayscale(u8* data, i32 width, i32 height, f32* matrix)
 {
   i32 base = 0;
   i32 y = 0;
+  assume(height != 0);
+  assume(width != 0);
   for (;;) {
     i32 x;
     for (x = 0; x != width; ++x) {
@@ -183,6 +192,7 @@ static void dct1d(f32* vector, i32 size, f32* result)
   f32 scale = sqrt(2.0f * sizerecip);
   f32 factored = 0.0f;
   i32 u = 0;
+  assume(size != 0);
   for (;;) {
     f32 sum = 0.0f;
     i32 x;
@@ -202,6 +212,7 @@ static void dct2(f32* matrix, i32 size, f32* result, struct arena scratch)
   f32* temp = new (&scratch, size * size, f32);
   f32* row = new (&scratch, size, f32);
   f32* column = new (&scratch, size, f32);
+  assume(size != 0);
 
   {
     i32 ys = 0;
@@ -251,6 +262,7 @@ static void extractTopBlock(f32* matrix,
   i32 blockBase = 0;
   i32 srcBase = 0;
   i32 y = 0;
+  assume(blockSize != 0);
   for (;;) {
     i32 x;
     for (x = 0; x != blockSize; ++x) {

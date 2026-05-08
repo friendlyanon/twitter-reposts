@@ -61,7 +61,7 @@ static f32 floor(f32 x)
 
 static f32 round(f32 x)
 {
-  return __builtin_floorf(x + 0.5f);
+  return __builtin_nearbyintf(x);
 }
 
 /* minimax degree-7 sine, x in [0, pi/2] */

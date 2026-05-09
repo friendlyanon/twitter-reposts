@@ -36,34 +36,19 @@ foreach ($cmd in $commands) {
 }
 
 $raw = [System.IO.File]::ReadAllBytes("$PWD/phash.wasm")
-$indent = 4
-$pad = ' ' * $indent
+$hex = [System.BitConverter]::ToString($raw) -replace '-'
+$limit = 86
 $sb = [System.Text.StringBuilder]::new()
-$col = 0
-for ($i = 0; $i -ne $raw.Count; ++$i) {
-  $v = [string]$raw[$i]
-  if ($col -eq 0) {
-    [void]$sb.Append($pad)
-    $col = $indent
-  } elseif (($col + 1 + $v.Length) -gt 88) {
-    [void]$sb.AppendLine(',')
-    [void]$sb.Append($pad)
-    $col = $indent
-  } else {
-    [void]$sb.Append(',')
-    ++$col
-  }
-  [void]$sb.Append($v)
-  $col += $v.Length
+for ($i = 0; $i -lt $hex.Length; $i += $limit) {
+  [void]$sb.Append($hex.Substring($i, [Math]::Min($limit, $hex.Length - $i)))
+  [void]$sb.Append("\`n")
 }
-$bytes = $sb.ToString()
+$hex = $sb.ToString()
 
 @"
 const computePhashFromRgba = await (async () => {
   const memory = new WebAssembly.Memory({ initial: 16 });
-  const { instance } = await WebAssembly.instantiate(new Uint8Array(JSON.parse(``[
-$bytes
-  ]``)), { env: { memory } });
+  const { instance } = await WebAssembly.instantiate(Uint8Array.fromHex(``\`n$hex``), { env: { memory } });
   const heapBase = instance.exports.__heap_base.value;
   const mem = new Uint8Array(memory.buffer);
   const i32View = new Int32Array(memory.buffer);

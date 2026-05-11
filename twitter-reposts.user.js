@@ -797,7 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const style = document.createElement("style");
   style.appendChild(new Text(`
 .dedupe-settings {
-  transform: translateY(-1px);
+  transform: translateY(4px);
   display: inline-block;
 }
 .dedupe-more {
@@ -874,6 +874,10 @@ document.addEventListener("DOMContentLoaded", () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  font-family: "TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.dedupe-dialog a {
+  text-decoration: none;
 }
 .dedupe-dialog {
   width: 600px;
@@ -894,6 +898,10 @@ document.addEventListener("DOMContentLoaded", () => {
 .dedupe-dialog-mask-dark {
   background-color: rgba(91, 112, 131, 0.4);
 }
+.dedupe-dialog-header {
+  background-color: rgb(20, 20, 20);
+  border-radius: 16px 16px 0 0;
+}
 .dedupe-dialog-header,
 .dedupe-dialog-footer {
   min-height: 53px;
@@ -902,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 .dedupe-dialog-body {
   padding: 4px;
-  flex-shrink: 1;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;

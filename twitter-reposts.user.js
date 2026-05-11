@@ -799,6 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
 .dedupe-settings {
   transform: translateY(4px);
   display: inline-block;
+  font-size: 0;
 }
 .dedupe-more {
   position: absolute;

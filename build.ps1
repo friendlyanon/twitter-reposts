@@ -51,7 +51,6 @@ const computePhashFromRgba = await (async () => {
   const { instance } = await WebAssembly.instantiate(Uint8Array.fromHex(``\`n$hex``), { env: { memory } });
   const heapBase = instance.exports.__heap_base.value;
   const mem = new Uint8Array(memory.buffer);
-  const i32View = new Int32Array(memory.buffer);
   const decoder = new TextDecoder();
 
   return function computePhashFromRgba(rgba, width, height, sampleSize, hashSize) {
@@ -62,25 +61,22 @@ const computePhashFromRgba = await (async () => {
 
     const hexLength = hashSize * hashSize >> 2;
 
-    // Layout at heapBase: [args struct (28)] [rgba data] [output] [heap -->]
-    const argsPtr = (heapBase + 3) & ~3;
-    const argsBase = argsPtr >> 2;
-    const rgbaPtr = argsPtr + 28;
+    // Layout at heapBase: [rgba data] [output] [heap -->]
+    const rgbaPtr = (heapBase + 3) & ~3;
     const outputPtr = rgbaPtr + rgba.length;
     const heapStart = (outputPtr + (hashSize * hashSize >> 2) + 3) & ~3;
 
     mem.set(rgba, rgbaPtr);
 
-    // struct computePhashFromRgbaArgs
-    i32View[argsBase] = rgbaPtr;        // rgba
-    i32View[argsBase + 1] = width;      // dims.width
-    i32View[argsBase + 2] = height;     // dims.height
-    i32View[argsBase + 3] = sampleSize; // hashing.sampleSize
-    i32View[argsBase + 4] = hashSize;   // hashing.hashSize
-    i32View[argsBase + 5] = outputPtr;  // output
-    i32View[argsBase + 6] = heapStart;  // heapStart
-
-    const resultLen = instance.exports.computePhashFromRgba(argsPtr);
+    const resultLen = instance.exports.computePhashFromRgba(
+      rgbaPtr,
+      width,
+      height,
+      sampleSize,
+      hashSize,
+      outputPtr,
+      heapStart,
+    );
     return decoder.decode(mem.slice(outputPtr, outputPtr + resultLen));
   };
 })();

@@ -334,32 +334,16 @@ static void bitsToHex(u8* restrict bits, i32 nbits, u8* restrict output)
   }
 }
 
-struct dims
-{
-  i32 width;
-  i32 height;
-};
-
-struct hashing
-{
-  i32 sampleSize;
-  i32 hashSize;
-};
-
-struct computePhashFromRgbaArgs
-{
-  u8* rgba;
-  struct dims dims;
-  struct hashing hashing;
-  u8* output;
-  u8* heapStart;
-};
-
-i32 computePhashFromRgba(struct computePhashFromRgbaArgs args)
+i32 computePhashFromRgba(u8* restrict rgba,
+                         i32 width,
+                         i32 height,
+                         i32 sampleSize,
+                         i32 hashSize,
+                         u8* restrict output,
+                         u8* restrict heapStart)
 {
   struct arena a;
-  i32 sampleSize = args.hashing.sampleSize;
-  i32 blockLen = args.hashing.hashSize * args.hashing.hashSize;
+  i32 blockLen = hashSize * hashSize;
   i32 hexLength = blockLen >> 2;
   u8* restrict sample;
   f32* restrict gray;
@@ -369,15 +353,14 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs args)
   u8* restrict bits;
   i32 sampleCount = sampleSize * sampleSize;
 
-  a.beg = args.heapStart;
+  a.beg = heapStart;
   a.end = (u8*)(__builtin_wasm_memory_size(0) << 16);
 
-  if (args.dims.width == sampleSize && args.dims.height == sampleSize) {
-    sample = args.rgba;
+  if (width == sampleSize && height == sampleSize) {
+    sample = rgba;
   } else {
     sample = new (&a, sampleCount << 2, u8);
-    resizeRgbaToSquare(
-        args.rgba, args.dims.width, args.dims.height, sampleSize, sample);
+    resizeRgbaToSquare(rgba, width, height, sampleSize, sample);
   }
 
   gray = new (&a, sampleCount, f32);
@@ -387,7 +370,7 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs args)
   dct2(gray, sampleSize, dctResult, a);
 
   top = new (&a, blockLen, f32);
-  extractTopBlock(dctResult, sampleSize, args.hashing.hashSize, top);
+  extractTopBlock(dctResult, sampleSize, hashSize, top);
 
   threshold = computeThreshold(top, blockLen, a);
   bits = new (&a, blockLen, u8);
@@ -398,7 +381,7 @@ i32 computePhashFromRgba(struct computePhashFromRgbaArgs args)
     }
   }
 
-  bitsToHex(bits, blockLen, args.output);
+  bitsToHex(bits, blockLen, output);
 
   return hexLength;
 }

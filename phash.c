@@ -33,6 +33,8 @@ typedef float f32;
     } \
   } while (0)
 
+#define memcpy(dst, src, size) __builtin_memcpy((dst), (src), (uz)(size))
+
 struct arena
 {
   u8* beg;
@@ -124,7 +126,7 @@ static void resizeRgbaToSquare(
   i32 ys = 0;
   i32 y = 0;
   assume(size != 0);
-  for (;;) {
+  for (;; ys += size) {
     f32 srcY = ((f32)y + 0.5f) * yRatio - 0.5f;
     i32 y0 = imax(0, (i32)floor(srcY));
     i32 y1 = imin(height - 1, y0 + 1);
@@ -157,7 +159,6 @@ static void resizeRgbaToSquare(
     if (++y == size) {
       break;
     }
-    ys += size;
   }
 }
 
@@ -170,7 +171,7 @@ static void grayscale(u8* restrict data,
   i32 y = 0;
   assume(height != 0);
   assume(width != 0);
-  for (;;) {
+  for (;; base += width) {
     i32 x;
     for (x = 0; x != width; ++x) {
       i32 i = base + x;
@@ -183,7 +184,6 @@ static void grayscale(u8* restrict data,
     if (++y == height) {
       break;
     }
-    base += width;
   }
 }
 
@@ -197,7 +197,7 @@ static void dct1d(f32* restrict vector, i32 size, f32* restrict result)
   f32 factored = 0.0f;
   i32 u = 0;
   assume(size != 0);
-  for (;;) {
+  for (;; factored += factor) {
     f32 sum = 0.0f;
     i32 x;
     for (x = 0; x != size; ++x) {
@@ -207,7 +207,6 @@ static void dct1d(f32* restrict vector, i32 size, f32* restrict result)
     if (++u == size) {
       break;
     }
-    factored += factor;
   }
 }
 
@@ -224,16 +223,12 @@ static void dct2(f32* restrict matrix,
   {
     i32 ys = 0;
     i32 y = 0;
-    for (;;) {
-      i32 u;
+    for (;; ys += size) {
       dct1d(matrix + ys, size, row);
-      for (u = 0; u != size; ++u) {
-        temp[ys + u] = row[u];
-      }
+      memcpy(temp + ys, row, size * sizeof(f32));
       if (++y == size) {
         break;
       }
-      ys += size;
     }
   }
 
@@ -242,20 +237,18 @@ static void dct2(f32* restrict matrix,
     for (x = 0; x != size; ++x) {
       i32 vs = 0;
       i32 v = 0;
-      for (;;) {
+      for (;; vs += size) {
         column[v] = temp[vs + x];
         if (++v == size) {
           break;
         }
-        vs += size;
       }
       dct1d(column, size, row);
-      for (vs = 0, v = 0;;) {
+      for (vs = 0, v = 0;; vs += size) {
         result[vs + x] = row[v];
         if (++v == size) {
           break;
         }
-        vs += size;
       }
     }
   }
@@ -266,20 +259,14 @@ static void extractTopBlock(f32* restrict matrix,
                             i32 blockSize,
                             f32* restrict block)
 {
-  i32 blockBase = 0;
-  i32 srcBase = 0;
-  i32 y = 0;
-  assume(blockSize != 0);
+  i32 x = 0;
   for (;;) {
-    i32 x;
-    for (x = 0; x != blockSize; ++x) {
-      block[blockBase + x] = matrix[srcBase + x];
-    }
-    if (++y == blockSize) {
+    memcpy(block, matrix, blockSize * sizeof(f32));
+    if (++x == blockSize) {
       return;
     }
-    blockBase += blockSize;
-    srcBase += srcSize;
+    block += blockSize;
+    matrix += srcSize;
   }
 }
 
@@ -297,9 +284,7 @@ static f32 computeThreshold(f32* restrict matrix,
 
   vlen = len - 1;
   values = new (&scratch, vlen, f32);
-  for (i = 1; i != len; ++i) {
-    values[i - 1] = matrix[i];
-  }
+  memcpy(values, matrix, vlen);
   for (i = 1; i != vlen; ++i) {
     f32 key = values[i];
     i32 j = i - 1;

@@ -33,7 +33,18 @@ typedef float f32;
     } \
   } while (0)
 
-#define memcpy(dst, src, size) __builtin_memcpy((dst), (src), (uz)(size))
+static void* memcpy(void* dst, void const* src, iz size)
+{
+  __asm__ volatile(
+      "local.get %0\n"
+      "local.get %1\n"
+      "local.get %2\n"
+      "memory.copy 0, 0"
+      : "+r"(dst)
+      : "r"(src), "r"(size)
+      : "memory");
+  return dst;
+}
 
 struct arena
 {

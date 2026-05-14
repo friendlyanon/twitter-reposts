@@ -17,7 +17,6 @@ typedef float f32;
 
 #define sizeof(x) ((iz)sizeof(x))
 #define alignof(x) ((iz) __alignof__(x))
-#define restrict __restrict__
 
 #define assert(c) \
   do { \
@@ -54,16 +53,16 @@ struct arena
 
 #define new(arena, count, T) ((T*)alloc(arena, count, sizeof(T), alignof(T)))
 
-static void* alloc(struct arena* restrict arena, iz count, iz size, iz align)
+static void* alloc(struct arena* arena, iz count, iz size, iz align)
 {
-  u8* restrict mem = arena->beg;
+  u8* mem = arena->beg;
   iz pad = (iz) - (uz)mem & (align - 1);
   assert(count >= 0);
   assert(count < (arena->end - mem - pad) / size);
 
   arena->beg += pad + count * size;
   {
-    void* restrict r = mem + pad;
+    void* r = mem + pad;
     __asm__("" : "+r"(r));
     return r;
   }
@@ -129,7 +128,7 @@ static i32 imin(i32 a, i32 b)
 }
 
 static void resizeRgbaToSquare(
-    u8* restrict rgba, i32 width, i32 height, i32 size, u8* restrict output)
+    u8* rgba, i32 width, i32 height, i32 size, u8* output)
 {
   f32 sizerecip = 1.0f / (f32)size;
   f32 xRatio = (f32)width * sizerecip;
@@ -173,10 +172,7 @@ static void resizeRgbaToSquare(
   }
 }
 
-static void grayscale(u8* restrict data,
-                      i32 width,
-                      i32 height,
-                      f32* restrict matrix)
+static void grayscale(u8* data, i32 width, i32 height, f32* matrix)
 {
   i32 base = 0;
   i32 y = 0;
@@ -198,7 +194,7 @@ static void grayscale(u8* restrict data,
   }
 }
 
-static void dct1d(f32* restrict vector, i32 size, f32* restrict result)
+static void dct1d(f32* vector, i32 size, f32* result)
 {
   f32 pi = 3.14159265f;
   f32 sizerecip = 1.0f / (f32)size;
@@ -221,14 +217,11 @@ static void dct1d(f32* restrict vector, i32 size, f32* restrict result)
   }
 }
 
-static void dct2(f32* restrict matrix,
-                 i32 size,
-                 f32* restrict result,
-                 struct arena scratch)
+static void dct2(f32* matrix, i32 size, f32* result, struct arena scratch)
 {
-  f32* restrict temp = new (&scratch, size * size, f32);
-  f32* restrict row = new (&scratch, size, f32);
-  f32* restrict column = new (&scratch, size, f32);
+  f32* temp = new (&scratch, size * size, f32);
+  f32* row = new (&scratch, size, f32);
+  f32* column = new (&scratch, size, f32);
   assume(size != 0);
 
   {
@@ -265,10 +258,10 @@ static void dct2(f32* restrict matrix,
   }
 }
 
-static void extractTopBlock(f32* restrict matrix,
+static void extractTopBlock(f32* matrix,
                             i32 srcSize,
                             i32 blockSize,
-                            f32* restrict block)
+                            f32* block)
 {
   i32 x = 0;
   for (;;) {
@@ -281,12 +274,10 @@ static void extractTopBlock(f32* restrict matrix,
   }
 }
 
-static f32 computeThreshold(f32* restrict matrix,
-                            i32 len,
-                            struct arena scratch)
+static f32 computeThreshold(f32* matrix, i32 len, struct arena scratch)
 {
   i32 i;
-  f32* restrict values;
+  f32* values;
   i32 vlen;
 
   if (len <= 1) {
@@ -316,7 +307,7 @@ static f32 computeThreshold(f32* restrict matrix,
   }
 }
 
-static void bitsToHex(u8* restrict bits, i32 nbits, u8* restrict output)
+static void bitsToHex(u8* bits, i32 nbits, u8* output)
 {
   static u8 const hexDigits[16] = "0123456789abcdef";
   i32 i = 0;
@@ -330,23 +321,23 @@ static void bitsToHex(u8* restrict bits, i32 nbits, u8* restrict output)
   }
 }
 
-i32 computePhashFromRgba(u8* restrict rgba,
+i32 computePhashFromRgba(u8* rgba,
                          i32 width,
                          i32 height,
                          i32 sampleSize,
                          i32 hashSize,
-                         u8* restrict output,
-                         u8* restrict heapStart)
+                         u8* output,
+                         u8* heapStart)
 {
   struct arena a;
   i32 blockLen = hashSize * hashSize;
   i32 hexLength = blockLen >> 2;
-  u8* restrict sample;
-  f32* restrict gray;
-  f32* restrict dctResult;
-  f32* restrict top;
+  u8* sample;
+  f32* gray;
+  f32* dctResult;
+  f32* top;
   f32 threshold;
-  u8* restrict bits;
+  u8* bits;
   i32 sampleCount = sampleSize * sampleSize;
 
   a.beg = heapStart;

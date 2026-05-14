@@ -144,8 +144,8 @@ static void resizeRgbaToSquare(
     i32 y0w = y0 * width;
     i32 y1w = y1 * width;
     f32 wy = srcY - (f32)y0;
-    i32 x;
-    for (x = 0; x != size; ++x) {
+    i32 x = 0;
+    for (; x != size; ++x) {
       f32 srcX = ((f32)x + 0.5f) * xRatio - 0.5f;
       i32 x0 = imax(0, (i32)floor(srcX));
       i32 x1 = imin(width - 1, x0 + 1);
@@ -155,8 +155,8 @@ static void resizeRgbaToSquare(
       i32 idx10 = (y0w + x1) << 2;
       i32 idx01 = (y1w + x0) << 2;
       i32 idx11 = (y1w + x1) << 2;
-      i32 c;
-      for (c = 0; c != 4; ++c) {
+      i32 c = 0;
+      for (; c != 4; ++c) {
         f32 top =
             (f32)rgba[idx00 + c] * (1.0f - wx) + (f32)rgba[idx10 + c] * wx;
         f32 bottom =
@@ -183,8 +183,8 @@ static void grayscale(u8* restrict data,
   assume(height != 0);
   assume(width != 0);
   for (;; base += width) {
-    i32 x;
-    for (x = 0; x != width; ++x) {
+    i32 x = 0;
+    for (; x != width; ++x) {
       i32 i = base + x;
       i32 idx = i << 2;
       f32 r = (f32)data[idx];
@@ -210,8 +210,8 @@ static void dct1d(f32* restrict vector, i32 size, f32* restrict result)
   assume(size != 0);
   for (;; factored += factor) {
     f32 sum = 0.0f;
-    i32 x;
-    for (x = 0; x != size; ++x) {
+    i32 x = 0;
+    for (; x != size; ++x) {
       sum += vector[x] * cos(((f32)x + 0.5f) * factored);
     }
     result[u] = (u == 0 ? scale0 : scale) * sum;
@@ -244,8 +244,8 @@ static void dct2(f32* restrict matrix,
   }
 
   {
-    i32 x;
-    for (x = 0; x != size; ++x) {
+    i32 x = 0;
+    for (; x != size; ++x) {
       i32 vs = 0;
       i32 v = 0;
       for (;; vs += size) {
@@ -319,11 +319,11 @@ static f32 computeThreshold(f32* restrict matrix,
 static void bitsToHex(u8* restrict bits, i32 nbits, u8* restrict output)
 {
   static u8 const hexDigits[16] = "0123456789abcdef";
-  i32 i;
-  for (i = 0; i < nbits; i += 4) {
+  i32 i = 0;
+  for (; i < nbits; i += 4) {
     i32 value = 0;
-    i32 j;
-    for (j = 0; j < 4 && (i + j) < nbits; ++j) {
+    i32 j = 0;
+    for (; j < 4 && (i + j) < nbits; ++j) {
       value |= (i32)bits[i + j] << (3 - j);
     }
     output[i >> 2] = hexDigits[value];
@@ -371,8 +371,8 @@ i32 computePhashFromRgba(u8* restrict rgba,
   threshold = computeThreshold(top, blockLen, a);
   bits = new (&a, blockLen, u8);
   {
-    i32 i;
-    for (i = 0; i != blockLen; ++i) {
+    i32 i = 0;
+    for (; i != blockLen; ++i) {
       bits[i] = top[i] > threshold ? 1 : 0;
     }
   }

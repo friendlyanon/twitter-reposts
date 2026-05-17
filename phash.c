@@ -264,13 +264,12 @@ static void extractTopBlock(f32* matrix,
                             f32* block)
 {
   i32 x = 0;
-  for (;;) {
+  assume(blockSize != 0);
+  for (;; block += blockSize, matrix += srcSize) {
     memcpy(block, matrix, blockSize * sizeof(f32));
     if (++x == blockSize) {
       return;
     }
-    block += blockSize;
-    matrix += srcSize;
   }
 }
 

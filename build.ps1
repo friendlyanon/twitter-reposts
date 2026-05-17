@@ -55,7 +55,7 @@ const computePhashFromRgba = await (async () => {
 
   return function computePhashFromRgba(rgba, width, height, sampleSize, hashSize) {
     const rgbaLen = rgba.length;
-    if (rgbaLen === 0 || !(width > 0) || !(height > 0) || !(sampleSize > 0) | !(hashSize > 0)) {
+    if (rgbaLen === 0 || !(width >= 1) || !(height >= 1) || !(sampleSize >= 1) | !(hashSize >= 1)) {
       throw new Error("Invalid argument");
     }
 
@@ -63,7 +63,7 @@ const computePhashFromRgba = await (async () => {
 
     // Layout at heapBase: [rgba data] [output] [heap -->]
     const rgbaPtr = (heapBase + 3) & ~3;
-    const outputPtr = rgbaPtr + rgba.length;
+    const outputPtr = rgbaPtr + rgbaLen;
     const heapStart = (outputPtr + (hashSize * hashSize >> 2) + 3) & ~3;
 
     mem.set(rgba, rgbaPtr);

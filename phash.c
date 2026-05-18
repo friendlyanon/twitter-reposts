@@ -15,8 +15,16 @@ typedef ptrdiff_t iz;
 typedef size_t uz;
 typedef float f32;
 
+#define CAT(x, y) x##y
+#define CAT2(x, y) CAT(x, y)
+
 #define sizeof(x) ((iz)sizeof(x))
-#define alignof(x) ((iz) __alignof__(x))
+#define alignof(x) \
+  (sizeof(struct CAT2(Alignof, __LINE__) { \
+     unsigned char pad; \
+     x type; \
+   }) * 0 \
+   + (iz)offsetof(struct CAT2(Alignof, __LINE__), type))
 
 #define assert(c) \
   do { \

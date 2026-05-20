@@ -59,8 +59,6 @@ const computePhashFromRgba = await (async () => {
       throw new Error("Invalid argument");
     }
 
-    const hexLength = hashSize * hashSize >> 2;
-
     // Layout at heapBase: [rgba data] [output] [heap -->]
     const rgbaPtr = (heapBase + 3) & ~3;
     const outputPtr = rgbaPtr + rgbaLen;

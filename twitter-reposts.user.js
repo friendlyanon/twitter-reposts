@@ -106,8 +106,6 @@ D578E93D9420022D0000B3438716993E94200241016A2D0000B343A245163F949292380200200241
       throw new Error("Invalid argument");
     }
 
-    const hexLength = hashSize * hashSize >> 2;
-
     // Layout at heapBase: [rgba data] [output] [heap -->]
     const rgbaPtr = (heapBase + 3) & ~3;
     const outputPtr = rgbaPtr + rgbaLen;

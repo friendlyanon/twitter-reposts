@@ -6,7 +6,7 @@
 // @match       https://x.com/*
 // @grant       none
 // @run-at      document-start
-// @version     4
+// @version     5
 // @downloadURL https://raw.githubusercontent.com/friendlyanon/twitter-reposts/master/twitter-reposts.user.js
 // @supportURL  https://github.com/friendlyanon/twitter-reposts/issues
 // @homepageURL https://github.com/friendlyanon/twitter-reposts

@@ -48,7 +48,7 @@ const computePhashFromImageData = (imageData, sampleSize, hashSize) =>
 
 const computePhashFromRgba = await (async () => {
   const memory = new WebAssembly.Memory({ initial: 16 });
-  const { instance } = await WebAssembly.instantiate(Uint8Array.fromHex(`\
+  const { instance: { exports } } = await WebAssembly.instantiate(Uint8Array.fromHex(`\
 0061736D0100000001120260077F7F7F7F7F7F7F017F60037F7F7F00020F0103656E76066D656D6F727902\
 00020303020001060F027F01418080040B7F00419080040B07260214636F6D70757465506861736846726F\
 6D5267626100000B5F5F686561705F6261736503010AA80E02850C07077F037D057F027D057F017D017F3F\
@@ -96,7 +96,8 @@ A72ABE929443F0FF7F3F929422038C2003200C1B94200B92210B200941046A21092001200A41016A
 0D000B200220074102746A2006200520071B200B943802000240200741016A22072001460D002004200892\
 21080C010B0B0B0B180100418080040B1030313233343536373839616263646566\
 `), { env: { memory } });
-  const heapBase = instance.exports.__heap_base.value;
+  const fn = exports.computePhashFromRgba;
+  const heapBase = exports.__heap_base.value;
   const mem = new Uint8Array(memory.buffer);
   const decoder = new TextDecoder();
 
@@ -113,16 +114,8 @@ A72ABE929443F0FF7F3F929422038C2003200C1B94200B92210B200941046A21092001200A41016A
 
     mem.set(rgba, rgbaPtr);
 
-    const resultLen = instance.exports.computePhashFromRgba(
-      rgbaPtr,
-      width,
-      height,
-      sampleSize,
-      hashSize,
-      outputPtr,
-      heapStart,
-    );
-    return decoder.decode(mem.slice(outputPtr, outputPtr + resultLen));
+    const len = fn(rgbaPtr, width, height, sampleSize, hashSize, outputPtr, heapStart);
+    return decoder.decode(mem.slice(outputPtr, outputPtr + len));
   };
 })();
 

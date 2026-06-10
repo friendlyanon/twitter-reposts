@@ -48,8 +48,9 @@ $hex = $sb.ToString()
 @"
 const computePhashFromRgba = await (async () => {
   const memory = new WebAssembly.Memory({ initial: 16 });
-  const { instance } = await WebAssembly.instantiate(Uint8Array.fromHex(``\`n$hex``), { env: { memory } });
-  const heapBase = instance.exports.__heap_base.value;
+  const { instance: { exports } } = await WebAssembly.instantiate(Uint8Array.fromHex(``\`n$hex``), { env: { memory } });
+  const fn = exports.computePhashFromRgba;
+  const heapBase = exports.__heap_base.value;
   const mem = new Uint8Array(memory.buffer);
   const decoder = new TextDecoder();
 
@@ -66,16 +67,8 @@ const computePhashFromRgba = await (async () => {
 
     mem.set(rgba, rgbaPtr);
 
-    const resultLen = instance.exports.computePhashFromRgba(
-      rgbaPtr,
-      width,
-      height,
-      sampleSize,
-      hashSize,
-      outputPtr,
-      heapStart,
-    );
-    return decoder.decode(mem.slice(outputPtr, outputPtr + resultLen));
+    const len = fn(rgbaPtr, width, height, sampleSize, hashSize, outputPtr, heapStart);
+    return decoder.decode(mem.slice(outputPtr, outputPtr + len));
   };
 })();
 

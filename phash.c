@@ -66,7 +66,7 @@ static void* alloc(struct arena* arena, iz count, iz size, iz align)
   u8* mem = arena->beg;
   iz pad = (iz) - (uz)mem & (align - 1);
   assert(count >= 0);
-  assert(count < (arena->end - mem - pad) / size);
+  assert(count <= (arena->end - mem - pad) / size);
 
   arena->beg += pad + count * size;
   {

@@ -684,7 +684,7 @@ function cacheTweets(xhr, orig) {
 
 replaceWith(XMLHttpRequest.prototype, "open", (orig) => function open(method, url, ...rest) {
   const { pathname } = new URL(url, location.origin);
-  if (pathname.endsWith("/UserMedia")) {
+  if (pathname.endsWith("/UserPhotoTimeline")) {
     userMediaSet.add(this);
   }
 
@@ -736,7 +736,7 @@ new MutationObserver(() => {
   }
 
   if (mediaTab.length === 0) {
-    const node = document.querySelector("a[role=tab][href$=\"/media\"][aria-selected=true]");
+    const node = document.querySelector("a[role=tab][href$=\"/media?filter=photo\"][aria-selected=true]");
     if (node == null) {
       return;
     }

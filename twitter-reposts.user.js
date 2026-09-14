@@ -135,10 +135,19 @@ function popcount(x) {
   return x & 0x7F;
 }
 
+const hexValue = new Uint8Array(128);
+for (let i = 0; i !== 10; ++i) {
+  hexValue[48 + i] = i;
+}
+for (let i = 0; i !== 6; ++i) {
+  hexValue[65 + i] = 10 + i;
+}
+
 function hammingDistance(hash1, hash2) {
   let distance = 0;
-  for (let i = 0; i !== hash1.length; ++i) {
-    distance += popcount(parseInt(hash1[i], 16) ^ parseInt(hash2[i], 16));
+  const limit = hash1.length;
+  for (let i = 0; i !== limit; ++i) {
+    distance += popcount(hexValue[hash1.charCodeAt(i)] ^ hexValue[hash2.charCodeAt(i)]);
   }
   return distance;
 }

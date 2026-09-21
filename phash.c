@@ -86,9 +86,14 @@ static f32 floor(f32 x)
   return __builtin_floorf(x);
 }
 
+static f32 ceil(f32 x)
+{
+  return __builtin_ceilf(x);
+}
+
 static f32 round(f32 x)
 {
-  return __builtin_nearbyintf(x);
+  return x > 0 ? floor(x + 0.5f) : ceil(x - 0.5f);
 }
 
 /* minimax degree-7 sine, x in [0, pi/2] */

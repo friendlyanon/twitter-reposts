@@ -35,11 +35,11 @@ function createCanvasElement(size) {
   return canvas;
 }
 
-function computePhashFromImage(image, sampleSize, hashSize, flip = false) {
+function computePhashFromImage(image, sampleSize, hashSize) {
   const canvas = createCanvasElement(sampleSize);
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(image, 0, 0, flip ? -sampleSize : sampleSize, sampleSize);
+  ctx.drawImage(image, 0, 0, sampleSize, sampleSize);
   return computePhashFromImageData(ctx.getImageData(0, 0, sampleSize, sampleSize), sampleSize, hashSize);
 }
 
@@ -278,10 +278,7 @@ class Dedupe {
         const newPromise = new Promise((resolve, reject) => {
           image.onload = () => {
             if (this.running) {
-              this.map.set(id, {
-                normal: computePhashFromImage(image, this.sampleSize, this.hashSize),
-                flipped: computePhashFromImage(image, this.sampleSize, this.hashSize, true),
-              });
+              this.map.set(id, computePhashFromImage(image, this.sampleSize, this.hashSize));
             }
 
             resolve();
@@ -313,7 +310,7 @@ class Dedupe {
         continue;
       }
 
-      const hashes = this.map.get(idI);
+      const hash = this.map.get(idI);
       const group = [idI];
       visited.add(idI);
       for (let j = i + 1; j !== limitJ; ++j) {
@@ -322,11 +319,7 @@ class Dedupe {
           continue;
         }
 
-        const others = this.map.get(idJ);
-        const similarity = Math.max(
-          calculateSimilarity(hashes.normal, others.normal),
-          calculateSimilarity(hashes.normal, others.flipped),
-        );
+        const similarity = calculateSimilarity(hash, this.map.get(idJ));
         if (similarity >= this.threshold) {
           group.push(idJ);
           visited.add(idJ);

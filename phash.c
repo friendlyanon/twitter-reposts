@@ -298,7 +298,7 @@ static f32 computeThreshold(f32* matrix, i32 len, struct arena scratch)
 
   vlen = len - 1;
   values = new (&scratch, vlen, f32);
-  memcpy(values, matrix, vlen);
+  memcpy(values, matrix, vlen * sizeof(f32));
   for (i = 1; i != vlen; ++i) {
     f32 key = values[i];
     i32 j = i - 1;

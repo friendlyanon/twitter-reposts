@@ -76,10 +76,14 @@ const width = 80;
 const height = 80;
 const sampleSize = 80;
 const hashSize = 8;
-const rgba = new Uint8Array(width * height * 4).fill(255);
+const ab = new ArrayBuffer(width * height << 2);
+const u8 = new Uint8Array(ab);
+const u32 = new Uint32Array(ab);
 
-const hash = computePhashFromRgba(rgba, width, height, sampleSize, hashSize);
-console.log("hash:", hash);
+console.log("hash white:", computePhashFromRgba(u8.fill(255), width, height, sampleSize, hashSize));
+console.log("hash red:", computePhashFromRgba((u32.fill(0xFF000080), u8), width, height, sampleSize, hashSize));
+console.log("hash black:", computePhashFromRgba((u32.fill(0xFF000000), u8), width, height, sampleSize, hashSize));
+console.log("hash random:", computePhashFromRgba((u32.forEach((_, i, a) => void (a[i] = Math.floor(Math.random() * (0xFFFFFFFF + 1)))), u8), width, height, sampleSize, hashSize));
 "@ | Set-Content -Encoding utf8 example.mjs
 
 Write-Host '>> node example.mjs'

@@ -354,6 +354,7 @@ i32 computePhashFromRgba(u8* rgba,
 
   a.beg = heapStart;
   a.end = (u8*)(__builtin_wasm_memory_size(0) << 16);
+  assert(hashSize <= sampleSize);
 
   if (width == sampleSize && height == sampleSize) {
     sample = rgba;
@@ -368,6 +369,7 @@ i32 computePhashFromRgba(u8* rgba,
   dctResult = new (&a, sampleCount, f32);
   dct2(gray, sampleSize, dctResult, a);
 
+  a.beg = heapStart;
   top = new (&a, blockLen, f32);
   extractTopBlock(dctResult, sampleSize, hashSize, top);
 
